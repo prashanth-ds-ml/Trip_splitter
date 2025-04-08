@@ -67,6 +67,13 @@ with st.container():
         else:
             st.warning("⚠️ Please enter all fields including category.")
 
+# --- Total Trip Summary Above History ---
+if expenses:
+    total = sum(e['amount'] for e in expenses)
+    st.markdown("---")
+    st.subheader("💰 Total Trip Cost")
+    st.metric("Total Spent So Far", f"₹{total:.2f}")
+
 # --- Logs & History Section ---
 st.markdown("---")
 st.subheader("🔐 View Trip Summary (Protected)")
