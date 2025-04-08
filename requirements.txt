@@ -1,0 +1,4 @@
+streamlit>=1.25
+pymongo>=4.5
+pandas
+matplotlib
