@@ -1,37 +1,43 @@
 # src/trip_splitter/app.py
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 from pymongo import MongoClient
 
-from .config import get_config
-from .utils import compute_balances, optimize_settlements
+from config import get_config
+from utils import compute_balances, optimize_settlements
+
 
 st.set_page_config(page_title="Trip Splitter", layout="wide")
 
 
 # ---------- DB & CONFIG ----------
 
-cfg = get_config(st_secrets=st.secrets if hasattr(st, "secrets") else None)
+# Safely try to access st.secrets (works on Streamlit Cloud, and locally if .streamlit/secrets.toml exists)
+try:
+    st_secrets = st.secrets
+except Exception:
+    st_secrets = None
+
+try:
+    cfg = get_config(st_secrets=st_secrets)
+except RuntimeError as e:
+    st.error(str(e))
+    st.stop()
+
 mongo_uri = cfg["mongo"]["uri"]
 db_name = cfg["mongo"]["db_name"]
-
-if not mongo_uri:
-    st.error(
-        "MongoDB URI is not configured.\n\n"
-        "Set it via environment variables, Streamlit secrets, or run `trip-splitter init` locally."
-    )
-    st.stop()
 
 client = MongoClient(mongo_uri)
 db = client[db_name]
 
-TRIP_CONFIG_COLLECTION = db["_trip_configs"]
+# Trip config collection; you said yours is "Trip_names"
+TRIP_CONFIG_COLLECTION = db["Trip_names"]  # change if you prefer a different name
 
 
 # ---------- SIDEBAR: TRIP MANAGEMENT ----------
@@ -141,7 +147,9 @@ else:
             )
             custom_category = ""
             if category_selection == "Other (Type below)":
-                custom_category = st.text_input("✏️ Custom Category", placeholder="e.g. Ice Cream, Cigarettes")
+                custom_category = st.text_input(
+                    "✏️ Custom Category", placeholder="e.g. Ice Cream, Cigarettes"
+                )
                 category = custom_category.strip()
             else:
                 category = category_selection
@@ -176,17 +184,17 @@ else:
 
 # ---------- SUMMARY: TOTAL TRIP COST ----------
 
-if expenses:
-    total, balances, person_spent, person_owes, category_spent = compute_balances(
-        expenses, participants
-    )
-
-    st.markdown("---")
-    st.subheader("💰 Total Trip Cost")
-    st.metric("Total Spent So Far", f"₹{total:.2f}")
-else:
+if not expenses:
     st.info("No expenses yet. Add your first expense above.")
     st.stop()
+
+total, balances, person_spent, person_owes, category_spent = compute_balances(
+    expenses, participants
+)
+
+st.markdown("---")
+st.subheader("💰 Total Trip Cost")
+st.metric("Total Spent So Far", f"₹{total:.2f}")
 
 
 # ---------- CATEGORY-WISE BREAKDOWN ----------

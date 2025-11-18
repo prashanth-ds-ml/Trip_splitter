@@ -3,53 +3,32 @@ from __future__ import annotations
 
 import subprocess
 import sys
-from typing import Optional
+from pathlib import Path
 
 import typer
 
-from .config import load_file_config, save_config, CONFIG_PATH
-
 app = typer.Typer(help="Trip Splitter CLI")
-
-
-@app.command()
-def init() -> None:
-    """
-    Interactive setup: configure MongoDB URI + DB name
-    and save to ~/.trip_splitter/config.toml
-    """
-    cfg = load_file_config()
-
-    typer.echo(f"Config file: {CONFIG_PATH}")
-
-    current_uri = cfg["mongo"].get("uri", "")
-    current_db = cfg["mongo"].get("db_name", "Trips")
-
-    uri = typer.prompt(
-        "Enter your MongoDB URI (e.g. mongodb+srv://user:pass@cluster/...)",
-        default=current_uri,
-    )
-    db_name = typer.prompt(
-        "Enter MongoDB database name",
-        default=current_db,
-    )
-
-    cfg["mongo"]["uri"] = uri
-    cfg["mongo"]["db_name"] = db_name
-
-    save_config(cfg)
-    typer.secho("✅ Configuration saved.", fg=typer.colors.GREEN)
 
 
 @app.command()
 def run() -> None:
     """
     Run the Trip Splitter Streamlit app.
+
+    Note:
+      MongoDB credentials are ONLY read from Streamlit secrets:
+      - On Streamlit Cloud: app secrets
+      - Locally (optional): .streamlit/secrets.toml
     """
-    # Use streamlit CLI; assumes 'streamlit' is in PATH
+    app_path = Path(__file__).with_name("app.py")
+
+    if not app_path.exists():
+        typer.secho(f"Could not find app.py at {app_path}", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
     try:
         subprocess.run(
-            [sys.executable, "-m", "streamlit", "run", "-m", "trip_splitter.app"],
+            [sys.executable, "-m", "streamlit", "run", str(app_path)],
             check=False,
         )
     except FileNotFoundError:

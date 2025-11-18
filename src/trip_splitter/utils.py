@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Dict, Iterable, List, Tuple, Any
+from typing import Any, Dict, Iterable, List, Tuple
 
 
 def compute_aggregates(
@@ -62,7 +62,7 @@ def compute_balances(
         expenses, participants
     )
 
-    balances = {}
+    balances: Dict[str, float] = {}
     for p in participants:
         spent = person_spent.get(p, 0.0)
         owes = person_owes.get(p, 0.0)
@@ -73,7 +73,7 @@ def compute_balances(
 
 def optimize_settlements(balances: Dict[str, float]) -> List[Tuple[str, str, float]]:
     """
-    Same greedy algorithm you had:
+    Same greedy algorithm as your original code:
     Takes balances dict (positive -> should receive, negative -> owes)
     Returns list of (debtor, creditor, amount)
     """

@@ -1,12 +1,14 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "trip-splitter"
 version = "0.1.0"
 description = "Privacy-first, self-hostable trip expense splitter"
-authors = [
-  { name = "K. Prashanth",V. Vineel email = "prashanth01071995@gmail.com" }
-]
 readme = "README.md"
 requires-python = ">=3.9"
+
 dependencies = [
   "streamlit",
   "pymongo",
@@ -18,7 +20,3 @@ dependencies = [
 
 [project.scripts]
 trip-splitter = "trip_splitter.cli:app"
-
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
