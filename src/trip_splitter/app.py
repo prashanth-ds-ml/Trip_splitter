@@ -1,4 +1,3 @@
-# src/trip_splitter/app.py
 from __future__ import annotations
 
 from datetime import datetime
@@ -87,7 +86,7 @@ with st.sidebar:
                     }
                 )
                 st.success(f"Trip '{new_trip_name}' created. Select it from the dropdown above.")
-                st.rerun()
+                st.experimental_rerun()
 
     # ---- Manage participants for selected trip ----
     if selected_trip and selected_trip != "-- Select a trip --":
@@ -123,7 +122,7 @@ with st.sidebar:
                         {"$addToSet": {"participants": np_clean}},
                     )
                     st.success(f"Added '{np_clean}' to participants.")
-                    st.rerun()
+                    st.experimental_rerun()
 
 
 # ---------- MAIN HEADER ----------
@@ -152,7 +151,8 @@ trip_collection = db[selected_trip]
 # ---------- LOAD EXPENSES ----------
 
 def fetch_expenses():
-    return list(trip_collection.find({"type": "expense"}, {"_id": 0}))
+    # Keep _id so we can edit/delete
+    return list(trip_collection.find({"type": "expense"}))
 
 
 expenses = fetch_expenses()
@@ -212,12 +212,12 @@ else:
                     }
                     trip_collection.insert_one(expense)
                     st.success(f"🎉 Added ₹{amount:.2f} by {paid_by} under {category}")
-                    st.rerun()
+                    st.experimental_rerun()
             else:
                 st.warning("⚠️ Please enter all fields including category and a positive amount.")
 
 
-# ---------- SUMMARY: TOTAL TRIP COST ----------
+# ---------- SUMMARY DATA ----------
 
 if not expenses:
     st.info("No expenses yet. Add your first expense above.")
@@ -227,14 +227,45 @@ total, balances, person_spent, person_owes, category_spent = compute_balances(
     expenses, participants
 )
 
+# Build a reusable DataFrame of expenses (for logs, edit/delete, export)
+df_exp = pd.DataFrame(expenses)
+if not df_exp.empty:
+    if "amount" in df_exp.columns:
+        df_exp["amount"] = df_exp["amount"].astype(float)
+
+
+# ---------- TRIP HEADER METRICS ----------
+
 st.markdown("---")
-st.subheader("💰 Total Trip Cost")
-st.metric("Total Spent So Far", f"₹{total:.2f}")
+m1, m2, m3 = st.columns(3)
+with m1:
+    st.metric("Trip", selected_trip)
+with m2:
+    st.metric("Participants", len(participants))
+with m3:
+    st.metric("Total Spent", f"₹{total:.2f}")
+
+
+# ---------- PER-PERSON SUMMARY ----------
+
+with st.expander("👥 Per-person summary"):
+    summary_rows = []
+    for p in participants:
+        summary_rows.append(
+            {
+                "Participant": p,
+                "Total paid (₹)": round(person_spent.get(p, 0.0), 2),
+                "Fair share (₹)": round(person_owes.get(p, 0.0), 2),
+                "Balance (₹)": round(balances.get(p, 0.0), 2),
+            }
+        )
+    df_summary = pd.DataFrame(summary_rows)
+    st.dataframe(df_summary, use_container_width=True)
 
 
 # ---------- CATEGORY-WISE BREAKDOWN ----------
 
-with st.expander("📊 Category-wise Expense Breakdown"):
+with st.expander("📊 Category-wise expense breakdown"):
     if category_spent:
         df_cat = pd.DataFrame(
             [{"Category": cat, "Amount": amt} for cat, amt in category_spent.items()]
@@ -249,10 +280,8 @@ with st.expander("📊 Category-wise Expense Breakdown"):
 
 # ---------- DAY-WISE EXPENSE LOG ----------
 
-with st.expander("🗓️ Day-wise Expense Log"):
-    df_exp = pd.DataFrame(expenses)
+with st.expander("🗓️ Day-wise expense log"):
     if not df_exp.empty:
-        df_exp["amount"] = df_exp["amount"].astype(float)
         for date in sorted(df_exp["timestamp"].unique()):
             st.markdown(f"#### 📅 {date}")
             df_day = df_exp[df_exp["timestamp"] == date]
@@ -281,7 +310,7 @@ with st.expander("🗓️ Day-wise Expense Log"):
 
 # ---------- NET BALANCES ----------
 
-with st.expander("📋 Net Balances"):
+with st.expander("📋 Net balances by person"):
     for p in participants:
         b = balances.get(p, 0.0)
         if b > 0:
@@ -292,12 +321,118 @@ with st.expander("📋 Net Balances"):
             st.info(f"💤 {p}: Settled")
 
 
-# ---------- WHO OWES WHOM ----------
+# ---------- WHO OWES WHOM (SETTLEMENTS) ----------
 
-with st.expander("🔁 Who Owes Whom"):
+with st.expander("🔁 Optimized settlements (who owes whom)"):
     transactions = optimize_settlements(balances)
     if transactions:
         for frm, to, amt in transactions:
             st.write(f"👉 `{frm}` owes `{to}` ₹{amt:.2f}")
     else:
         st.success("Everyone is settled. No dues pending!")
+
+
+# ---------- EDIT / DELETE EXPENSES ----------
+
+with st.expander("✏️ Edit or delete expenses"):
+    if df_exp.empty:
+        st.write("No expenses to edit or delete.")
+    else:
+        # Build a human-readable label for each expense
+        def make_label(row):
+            return (
+                f"{row.get('timestamp', '')} | {row.get('paid_by', '')} "
+                f"paid ₹{row.get('amount', 0):.2f} for {row.get('description', '')} "
+                f"[{row.get('category', '')}]"
+            )
+
+        df_exp["__label__"] = df_exp.apply(make_label, axis=1)
+
+        selected_label = st.selectbox(
+            "Select an expense to edit or delete",
+            options=df_exp["__label__"].tolist(),
+        )
+
+        selected_row = df_exp[df_exp["__label__"] == selected_label].iloc[0]
+        selected_id = selected_row["_id"]
+
+        col_e1, col_e2 = st.columns(2)
+        with col_e1:
+            edit_paid_by = st.selectbox(
+                "Paid by",
+                participants,
+                index=participants.index(selected_row["paid_by"])
+                if selected_row["paid_by"] in participants
+                else 0,
+            )
+            edit_amount = st.number_input(
+                "Amount (₹)",
+                value=float(selected_row["amount"]),
+                min_value=0.0,
+                step=100.0,
+            )
+            edit_description = st.text_input(
+                "Description",
+                value=selected_row.get("description", ""),
+            )
+
+        with col_e2:
+            edit_category = st.text_input(
+                "Category",
+                value=selected_row.get("category", ""),
+            )
+            edit_included = st.multiselect(
+                "Included in split",
+                participants,
+                default=selected_row.get("included", participants),
+            )
+
+        col_b1, col_b2 = st.columns(2)
+        with col_b1:
+            if st.button("💾 Save changes"):
+                if not edit_included:
+                    st.warning("At least one participant must be included in the split.")
+                else:
+                    trip_collection.update_one(
+                        {"_id": selected_id},
+                        {
+                            "$set": {
+                                "paid_by": edit_paid_by,
+                                "amount": float(edit_amount),
+                                "description": edit_description,
+                                "category": edit_category,
+                                "included": edit_included,
+                            }
+                        },
+                    )
+                    st.success("Expense updated.")
+                    st.experimental_rerun()
+        with col_b2:
+            if st.button("🗑️ Delete this expense"):
+                trip_collection.delete_one({"_id": selected_id})
+                st.success("Expense deleted.")
+                st.experimental_rerun()
+
+
+# ---------- EXPORT DATA ----------
+
+with st.expander("⬇ Export data"):
+    if df_exp.empty:
+        st.write("No expenses to export.")
+    else:
+        export_df = df_exp.drop(columns=["_id", "__label__"], errors="ignore")
+        csv_exp = export_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "Download expenses as CSV",
+            data=csv_exp,
+            file_name=f"{selected_trip}_expenses.csv",
+            mime="text/csv",
+        )
+
+        csv_summary = df_summary.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "Download per-person summary as CSV",
+            data=csv_summary,
+            file_name=f"{selected_trip}_summary.csv",
+            mime="text/csv",
+        )
