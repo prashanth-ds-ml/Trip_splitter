@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -11,7 +10,6 @@ from pymongo import MongoClient
 
 from config import get_config
 from utils import compute_balances, optimize_settlements
-
 
 st.set_page_config(page_title="Trip Splitter", layout="wide")
 
@@ -56,6 +54,7 @@ with st.sidebar:
     )
 
     st.markdown("---")
+    # ---- Create new trip ----
     with st.expander("➕ Create new trip"):
         with st.form("new_trip_form"):
             new_trip_name = st.text_input("Trip name", placeholder="e.g. Mulki Surf Trip 2026")
@@ -88,7 +87,43 @@ with st.sidebar:
                     }
                 )
                 st.success(f"Trip '{new_trip_name}' created. Select it from the dropdown above.")
-                st.rerun()
+                st.experimental_rerun()
+
+    # ---- Manage participants for selected trip ----
+    if selected_trip and selected_trip != "-- Select a trip --":
+        st.markdown("---")
+        with st.expander("👥 Manage participants"):
+            # Fetch latest participants for this trip
+            trip_cfg = TRIP_CONFIG_COLLECTION.find_one(
+                {"trip_name": selected_trip}, {"_id": 0, "participants": 1}
+            )
+            current_participants = trip_cfg.get("participants", []) if trip_cfg else []
+
+            if current_participants:
+                st.caption("Current participants:")
+                st.write(", ".join(current_participants))
+            else:
+                st.caption("No participants configured yet.")
+
+            new_participant = st.text_input(
+                "Add new participant",
+                placeholder="e.g. NEW_FRIEND",
+                key="add_participant_input",
+            )
+
+            if st.button("Add participant", key="add_participant_button"):
+                np_clean = new_participant.strip()
+                if not np_clean:
+                    st.warning("Participant name cannot be empty.")
+                elif np_clean in current_participants:
+                    st.info(f"'{np_clean}' is already in the participant list.")
+                else:
+                    TRIP_CONFIG_COLLECTION.update_one(
+                        {"trip_name": selected_trip},
+                        {"$addToSet": {"participants": np_clean}},
+                    )
+                    st.success(f"Added '{np_clean}' to participants.")
+                    st.experimental_rerun()
 
 
 # ---------- MAIN HEADER ----------
@@ -129,7 +164,7 @@ st.markdown("---")
 st.subheader(f"➕ Add New Expense – {selected_trip}")
 
 if not participants:
-    st.warning("This trip has no participants configured. Edit the trip config in MongoDB.")
+    st.warning("This trip has no participants configured. Add participants in the sidebar.")
 else:
     with st.container():
         col1, col2 = st.columns(2)
@@ -177,7 +212,7 @@ else:
                     }
                     trip_collection.insert_one(expense)
                     st.success(f"🎉 Added ₹{amount:.2f} by {paid_by} under {category}")
-                    st.rerun()
+                    st.experimental_rerun()
             else:
                 st.warning("⚠️ Please enter all fields including category and a positive amount.")
 
