@@ -86,7 +86,7 @@ with st.sidebar:
                     }
                 )
                 st.success(f"Trip '{new_trip_name}' created. Select it from the dropdown above.")
-                st.experimental_rerun()
+                st.rerun()
 
     # ---- Manage participants for selected trip ----
     if selected_trip and selected_trip != "-- Select a trip --":
@@ -122,7 +122,7 @@ with st.sidebar:
                         {"$addToSet": {"participants": np_clean}},
                     )
                     st.success(f"Added '{np_clean}' to participants.")
-                    st.experimental_rerun()
+                    st.rerun()
 
 
 # ---------- MAIN HEADER ----------
@@ -212,7 +212,7 @@ else:
                     }
                     trip_collection.insert_one(expense)
                     st.success(f"🎉 Added ₹{amount:.2f} by {paid_by} under {category}")
-                    st.experimental_rerun()
+                    st.rerun()
             else:
                 st.warning("⚠️ Please enter all fields including category and a positive amount.")
 
@@ -406,12 +406,12 @@ with st.expander("✏️ Edit or delete expenses"):
                         },
                     )
                     st.success("Expense updated.")
-                    st.experimental_rerun()
+                    st.rerun()
         with col_b2:
             if st.button("🗑️ Delete this expense"):
                 trip_collection.delete_one({"_id": selected_id})
                 st.success("Expense deleted.")
-                st.experimental_rerun()
+                st.rerun()
 
 
 # ---------- EXPORT DATA ----------
