@@ -180,11 +180,11 @@ Replace these placeholders with your real screenshots once the app UI is ready.
 ```
 
 <p align="center">
-  <img src="https://via.placeholder.com/900x450?text=Trip+Splitter+Home+Screen" />
+  <img src="https://github.com/Vineel-Vaddi/Trip_splitter/blob/9946555aa268791cc6cc62d738e434d6b17a3e25/screenshots/Screenshot%202025-11-25%20052323.png" />
   <br/><br/>
-  <img src="https://via.placeholder.com/900x450?text=Expense+Entry+UI" />
+  <img src="https://github.com/Vineel-Vaddi/Trip_splitter/blob/9946555aa268791cc6cc62d738e434d6b17a3e25/screenshots/Screenshot%202025-11-25%20052333.png" />
   <br/><br/>
-  <img src="https://via.placeholder.com/900x450?text=Analytics+Dashboard" />
+  <img src="https://github.com/Vineel-Vaddi/Trip_splitter/blob/9946555aa268791cc6cc62d738e434d6b17a3e25/screenshots/Screenshot%202025-11-25%20052350.png" />
 </p>
 
 ---
