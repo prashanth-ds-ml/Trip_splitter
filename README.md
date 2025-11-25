@@ -167,12 +167,18 @@ We moved the full, detailed step-by-step beginner guide to:
 
 📄 **guide.md** → *A complete cookbook to set up MongoDB, Streamlit, secrets, and start using the app.*
 
+<p align="center">
+  <a href="./guide.md">
+    <img src="https://img.shields.io/badge/OPEN%20SETUP%20GUIDE-blue?style=for-the-badge" />
+  </a>
+</p>
+
 This README gives the high-level overview.
 guide.md helps beginners deploy it in < 10 minutes.
 
 ---
 
-# 🖼️ **Screenshots (Add Yours Here)**
+# 🖼️ **Screenshots**
 
 ```
 📌 NOTE:
