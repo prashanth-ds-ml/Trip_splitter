@@ -180,11 +180,6 @@ guide.md helps beginners deploy it in < 10 minutes.
 
 # 🖼️ **Screenshots**
 
-```
-📌 NOTE:
-Replace these placeholders with your real screenshots once the app UI is ready.
-```
-
 <p align="center">
   <img src="https://github.com/Vineel-Vaddi/Trip_splitter/blob/9946555aa268791cc6cc62d738e434d6b17a3e25/screenshots/Screenshot%202025-11-25%20052323.png" />
   <br/><br/>
