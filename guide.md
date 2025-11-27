@@ -307,7 +307,7 @@ Works on phones too 📱
 
 ---
 
-# 🛠️ **10. Developer Notes (Optional)**
+# 🛠️ **10. Developer Notes**
 
 ### 🧱 Tech Stack
 
