@@ -29,6 +29,9 @@ Just a clean shared link.
 
 ---
 
+Check this out for demo: https://tripsplitter.streamlit.app/
+
+---
 # 🧠 **Why We Built This**
 
 Most expense-splitter apps are either:
